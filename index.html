@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Empire Remake - Scenarios Workshop</title>
+    <!-- Прямое подключение серверного ядра Supabase -->
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        :root {
+            --bg-color: #14191f;
+            --panel-bg: #1c232c;
+            --accent: #d4af37;
+            --text: #e3e8ef;
+            --btn-blue: #2b4c7e;
+            --danger: #ff6b6b;
+            --warning: #ffaa00;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 10px;
+        }
+        header h1 {
+            margin: 0;
+            color: var(--accent);
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        #authBlock {
+            text-align: right;
+            font-size: 13px;
+        }
+        .user-container {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            vertical-align: middle;
+        }
+        .user-name {
+            font-weight: bold;
+            color: #fff;
+        }
+        .mod-frame {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            background: rgba(28, 35, 44, 0.8);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--accent);
+            text-transform: uppercase;
+        }
+        .check-circle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 14px;
+            height: 14px;
+            background-color: var(--accent);
+            color: #000;
+            border-radius: 50%;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .assigned-mod-frame {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(28, 35, 44, 0.5);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #ccc;
+            text-transform: uppercase;
+        }
+        .box {
+            background: var(--panel-bg);
+            padding: 15px;
+            border: 1px solid #2b3543;
+            border-radius: 4px;
+            margin: 20px 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .box h3 {
+            margin-top: 0;
+            color: var(--accent);
+            text-transform: uppercase;
+            border-bottom: 1px solid #2b3543;
+            padding-bottom: 5px;
+            font-size: 15px;
+        }
+        .notification-box {
+            background: #2c1a1a;
+            border: 1px solid var(--danger);
+            color: #ffb4ab;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 15px 0;
+            font-size: 13px;
+        }
+        input, button, select {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 12px;
+            box-sizing: border-box;
+            border-radius: 4px;
+            border: 1px solid #3d4b5e;
+            font-family: inherit;
+        }
+        input, select {
+            background: #14191f;
+            color: #fff;
+        }
+        button {
+            background: var(--accent);
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .tags-group {
+            margin: 12px 0;
+            padding: 10px;
+            background: #14191f;
+            border: 1px solid #3d4b5e;
+            border-radius: 4px;
+        }
+        .tags-group p {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            color: var(--accent);
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .checkbox-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .checkbox-item input {
+            display: inline-block;
+            width: auto;
+            margin: 0;
+            cursor: pointer;
+        }
+        .workshop-slider-container {
+            width: 100%;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            display: flex;
+            gap: 20px;
+            padding-bottom: 15px;
+        }
+        .workshop-page {
+            min-width: 100%;
+            box-sizing: border-box;
+            scroll-snap-align: start;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(5, auto);
+            gap: 15px;
+        }
+        .card {
+            background: var(--panel-bg);
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #2b3543;
+            border-top: 3px solid var(--accent);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .card h4 {
+            margin: 0 0 5px 0;
+            font-size: 14px;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 5px;
+        }
+        .badge {
+            background: #2b4c7e;
+            padding: 2px 5px;
+            font-size: 9px;
+            border-radius: 2px;
+            color: #fff;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .badge.epoch-badge {
+            background: #4a5d4e;
+        }
+        .badge.type-badge {
+            background: #6a4c7d;
+        }
+        .action-group {
+            display: flex;
+            gap: 5px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .download-btn {
+            background: var(--btn-blue);
+            color: white;
+            text-decoration: none;
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 3px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+            flex: 1 1 100%;
+        }
+        .mod-btn {
+            padding: 5px;
+            margin: 0;
+            font-size: 10px;
+            flex: 1;
+        }
+        .btn-delete {
+            background: var(--danger);
+            color: #fff;
+        }
+        .btn-rate {
+            background: var(--warning);
+            color: #000;
+        }
+        .flex-mod-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .slider-nav-info {
+            text-align: center;
+            font-size: 12px;
+            color: var(--accent);
+            margin: 5px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="color: var(--accent); font-weight: bold; font-size: 20px;">[⚔️]</span>
+            <h1>Our Empire Remake: Мастерская</h1>
+        </div>
+        <div id="authBlock">
+            <span id="userEmail"></span>
+            <button id="logoutBtn" style="display:none; width:auto; padding:5px 10px; margin: 5px 0 0 auto;">Покинуть пост</button>
+        </div>
+    </header>
+  
+    <main>
+        <div id="notificationCenter"></div>
+        <section id="authSection" class="box">
+            <h3>Вход в генеральный штаб</h3>
+            <input type="text" id="usernameInput" placeholder="Имя стратега (только для регистрации)">
+            <input type="email" id="emailInput" placeholder="Ваш Email">
+            <input type="password" id="passwordInput" placeholder="Секретный Пароль">
+            <div style="display: flex; gap: 10px;">
+                <button id="loginBtn">Войти</button>
+                <button id="registerBtn" style="background:var(--btn-blue); color:#fff;">Зарегистрировать профиль</button>
+            </div>
+        </section>
+        <section id="modVerificationSection" class="box" style="display: none;">
+            <h3>Канцелярия верховного трибунала</h3>
+            <button id="verifyModBtn" style="background: #a1887f; color: #000;">Подтвердить права модератора</button>
+            <div id="modStatusText" style="margin-top: 10px; font-weight: bold; text-align: center;"></div>
+            <div id="banControlPanel" style="display: none; border-top: 1px solid #444; margin-top: 15px; padding-top: 15px;">
+                <small style="color: var(--warning);">ПОВЫСИТЬ ДО СТАТУСА МОДЕРАТОРА:</small>
+                <div class="flex-mod-row">
+                    <input type="text" id="newModTargetUID" placeholder="ID стратега (например: 00014)">
+                    <button id="assignModBtn" style="background: var(--btn-blue); color: #fff; margin: 0; width: auto;">Повысить</button>
+                </div>
+                <small style="color: var(--warning); display: block; margin-top: 15px;">ВВЕСТИ ОГРАНИЧЕНИЕ НА ПУБЛИКАЦИЮ (МУТ):</small>
+                <input type="text" id="targetUserUID" placeholder="ID нарушителя (например: 00042)">
+                <div class="flex-mod-row">
+                    <input type="number" id="banDurationNum" placeholder="Число" min="1" style="flex: 1;">
+                    <select id="banTimeUnit" style="flex: 2;">
+                        <option value="minutes">Минут</option>
+                        <option value="hours">Часов</option>
+                        <option value="days">Дней</option>
+                    </select>
+                </div>
+                <button id="executeBanBtn" class="btn-delete">Наложить трибунал</button>
+            </div>
+        </section>
+        <section id="uploadSection" class="box" style="display: none;">
+            <h3>Опубликовать новый сценарий</h3>
+            <input type="text" id="titleInput" placeholder="Название (например: Битва за Европу)" required>
+            <label for="categorySelect"><small>Тип контента:</small></label>
+            <select id="categorySelect">
+                <option value="Историческая Эпоха">Историческая Эпоха</option>
+                <option value="Кастомная Карта">Кастомная Карта / Мир</option>
+                <option value="Альтернативная История">Альтернативная История</option>
+                <option value="Пакет Фракций / Флаги">Пакет Фракций / Лидеры</option>
+            </select>
+            <div class="tags-group">
+                <p>Игровой Стиль (Можно несколько):</p>
+                <div class="checkbox-container">
+                    <label class="checkbox-item"><input type="checkbox" name="styleTag" value="Исторический"> Исторический</label>
+                    <label class="checkbox-item"><input type="checkbox" name="styleTag" value="Альтернатива"> Альтернатива</label>
+                    <label class="checkbox-item"><input type="checkbox" name="styleTag" value="Смешанный"> Смешанный</label>
+                </div>
+            </div>
+            <div class="tags-group">
+                <p>Историческая Эпоха:</p>
+                <div class="checkbox-container">
+                    <label class="checkbox-item"><input type="checkbox" name="epochTag" value="Средневековье"> Средневековье</label>
+                    <label class="checkbox-item"><input type="checkbox" name="epochTag" value="1800"> 1800</label>
+                    <label class="checkbox-item"><input type="checkbox" name="epochTag" value="1900"> 1900</label>
+                    <label class="checkbox-item"><input type="checkbox" name="epochTag" value="Первая мировая война"> Первая мировая</label>
+                    <label class="checkbox-item"><input type="checkbox" name="epochTag" value="1918-1935"> 1918-1935</label>
+                    <label class="checkbox-item"><input type="checkbox" name="epochTag" value="Вторая мировая война"> Вторая мировая</label>
+                    <label class="checkbox-item"><input type="checkbox" name="epochTag" value="Холодная война"> Холодная война</label>
+                    <label class="checkbox-item"><input type="checkbox" name="epochTag" value="1990"> 1990</label>
+                    <label class="checkbox-item"><input type="checkbox" name="epochTag" value="2010"> 2010</label>
+                    <label class="checkbox-item"><input type="checkbox" name="epochTag" value="Современный"> Современный</label>
+                </div>
+            </div>
+            <input type="file" id="fileInput" required>
+            <button id="uploadBtn">Загрузить в архив Империи</button>
+        </section>
+        <section class="box">
+            <h3>Глобальный Архив Стратегий (Сетка 3х5)</h3>
+            <div class="slider-nav-info">Листайте карту вправо ➡️</div>
+            <div id="workshopSlider" class="workshop-slider-container"></div>
+        </section>
+    </main>
+
+    <script>
+        // === НАСТРОЙКИ СВЯЗИ С СЕРВЕРОМ ===
+        const SUPABASE_URL = "https://aqwrvccppgnqmoucozod.supabase.co/rest/v1/";
+        const SUPABASE_KEY = "sb_publishable_FHmdPuHqdL06dsdkHXJXqQ_BBUT_O55";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const CHIEF_MODERATOR_ID = "00001"; 
+        const MOD_TELEGRAM = "@mod_ourempire_remake";
+
+        let isModeratorVerified = false;
+        let currentUserRole = "user"; 
+        function generateTacticalID(num) {
+            const maxSimple = 99999;
+            if (num <= maxSimple) return String(num).padStart(5, '0');
+            const offset = num - maxSimple - 1;
+            const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const letterIndex = Math.floor(offset / maxSimple);
+            const currentNum = (offset % maxSimple) + 1;
+            return `${String(currentNum).padStart(5, '0')}${alphabet[letterIndex % alphabet.length]}`;
+        }
+
+        function getBadgeByRoleHTML(name, uid, roleType) {
+            if (roleType === "chief_mod") {
+                return `<div class="user-container"><span class="user-name">${name} #${uid}</span><span class="mod-frame"><span class="check-circle">✓</span> разработчик</span></div>`;
+            }
+            if (roleType === "assigned_mod") {
+                return `<div class="user-container"><span class="user-name">${name} #${uid}</span><span class="assigned-mod-frame">назначеный модератор</span></div>`;
+            }
+            return `<span class="user-name">${name} #${uid}</span>`;
+        }
+
+        async function checkUser() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                authSection.style.display = 'none'; uploadSection.style.display = 'block'; logoutBtn.style.display = 'block';
+                const savedName = user.user_metadata?.username || 'Стратег';
+                const formattedUID = user.user_metadata?.account_id || '00001';
+                
+                let role = "user";
+                if (formattedUID === CHIEF_MODERATOR_ID) {
+                    role = "chief_mod";
+                } else {
+                    const { data: modFlags } = await supabase.from('notifications').select('message').eq('user_id', user.id).eq('message', '__ASSIGNED_MOD_FLAG__');
+                    if (modFlags && modFlags.length > 0) role = "assigned_mod";
+                }
+                currentUserRole = role;
+
+                if (role === "chief_mod" || role === "assigned_mod") {
+                    modVerificationSection.style.display = 'block';
+                } else {
+                    modVerificationSection.style.display = 'none'; 
+                }
+                userEmail.innerHTML = getBadgeByRoleHTML(savedName, formattedUID, role);
+                loadNotifications(user.id);
+            } else {
+                authSection.style.display = 'block'; uploadSection.style.display = 'none'; modVerificationSection.style.display = 'none';
+                banControlPanel.style.display = 'none'; userEmail.innerHTML = 'Режим: Наблюдатель'; logoutBtn.style.display = 'none'; notificationCenter.innerHTML = '';
+            }
+        }
+
+        document.getElementById('verifyModBtn').addEventListener('click', async () => {
+            if (currentUserRole === "chief_mod" || currentUserRole === "assigned_mod") {
+                isModeratorVerified = true;
+                modStatusText.innerHTML = "<span style='color: #769e5d;'>ПОДТВЕРЖДЕНО!</span> Терминал трибунала открыт.";
+                banControlPanel.style.display = 'block';
+                loadWorkshopItems(); 
+            } else { alert("Доступ отклонён."); }
+        });
+
+        document.getElementById('assignModBtn').addEventListener('click', async () => {
+            const targetUID = document.getElementById('newModTargetUID').value.trim();
+            if (!targetUID) return alert("Введите ID кандидата!");
+            const { data: foundProjects } = await supabase.from('workshop_items').select('user_id, author').eq('account_id_raw', targetUID).limit(1);
+            if (!foundProjects || foundProjects.length === 0) return alert("ID не найден.");
+            const targetUUID = foundProjects.user_id;
+
+            await supabase.from('notifications').insert([{ user_id: targetUUID, message: `__ASSIGNED_MOD_FLAG__` }]);
+            await supabase.from('notifications').insert([{ user_id: targetUUID, message: `<span style='color:#ff6b6b;'>[ШТАБ]</span> Вы получили статус: Назначеный модератор.` }]);
+            alert(`Игрок #${targetUID} наделен правами.`); document.getElementById('newModTargetUID').value = '';
+        });
+
+        document.getElementById('executeBanBtn').addEventListener('click', async () => {
+            const targetUID = document.getElementById('targetUserUID').value.trim();
+            const durationNum = parseInt(document.getElementById('banDurationNum').value);
+            const timeUnit = document.getElementById('banTimeUnit').value;
+            if (!targetUID || !durationNum) return alert("Заполните поля!");
+
+            const { data: foundProjects } = await supabase.from('workshop_items').select('user_id, author').eq('account_id_raw', targetUID).limit(1);
+            if (!foundProjects || foundProjects.length === 0) return alert("Профиль не найден.");
+            const targetUUID = foundProjects.user_id; const targetName = foundProjects.author;
+
+            if (!confirm(`Выдать бан для "${targetName} #${targetUID}"?`)) return;
+
+            let msToAdd = 0;
+            if (timeUnit === 'minutes') msToAdd = durationNum * 60 * 1000;
+            if (timeUnit === 'hours') msToAdd = durationNum * 60 * 60 * 1000;
+            if (timeUnit === 'days') msToAdd = durationNum * 24 * 60 * 60 * 1000;
+
+            const muteUntilTime = new Date(Date.now() + msToAdd).toISOString();
+            const translateUnit = timeUnit === 'minutes' ? 'минут(ы)' : timeUnit === 'hours' ? 'часа(ов)' : 'дня(ей)';
+            
+            await supabase.from('notifications').insert([{ user_id: targetUUID, message: `<span style='color:#ff6b6b;'>[ТРИБУНАЛ]</span> Блокировка публикации на срок: ${durationNum} ${translateUnit}.` }]);
+            await supabase.from('notifications').insert([{ user_id: targetUUID, message: `__MUTE_FLAG__:${muteUntilTime}` }]);
+            alert(`Пользователь #${targetUID} заблокирован.`);
+            document.getElementById('targetUserUID').value = ''; document.getElementById('banDurationNum').value = '';
+        });
+
+        async function loadNotifications(userId) {
+            const { data, error } = await supabase.from('notifications').select('*').eq('user_id', userId);
+            if (error) return console.error(error);
+            notificationCenter.innerHTML = '';
+            data.forEach(note => {
+                if (note.message.startsWith('__MUTE_FLAG__:') || note.message === '__ASSIGNED_MOD_FLAG__') return;
+                const nBox = document.createElement('div'); nBox.className = 'notification-box'; nBox.innerHTML = note.message;
+                notificationCenter.appendChild(nBox);
+            });
+        }
+
+        document.getElementById('registerBtn').addEventListener('click', async () => {
+            const username = document.getElementById('usernameInput').value.trim();
+            const email = document.getElementById('emailInput').value.trim();
+            const password = document.getElementById('passwordInput').value;
+            if (!username) return alert("Введите имя стратега!");
+
+            try {
+                const { data: counterData, error: counterError } = await supabase.from('id_counter').select('current_value').limit(1);
+                if (counterError || !counterData || counterData.length === 0) throw new Error("Сбой терминала.");
+
+                const currentCount = counterData.current_value; const tacticalID = generateTacticalID(currentCount);
+
+                const { error: signUpError } = await supabase.auth.signUp({ 
+                    email, password, options: { data: { username: username, account_id: tacticalID } } 
+                });
+                if (signUpError) throw signUpError;
+
+                await supabase.from('id_counter').update({ current_value: currentCount + 1 }).eq('current_value', currentCount);
+                alert(`Регистрация успешна! Ваша серийная отметка: #${tacticalID}`);
+            } catch (err) { alert("Ошибка: " + err.message); }
+        });
+
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const email = document.getElementById('emailInput').value.trim();
+            const password = document.getElementById('passwordInput').value;
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) alert("Ошибка: " + error.message); else checkUser();
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            await supabase.auth.signOut(); isModeratorVerified = false; currentUserRole = "user"; modStatusText.innerText = "";
+            checkUser(); loadWorkshopItems();
+        });
+
+        document.getElementById('uploadBtn').addEventListener('click', async () => {
+            const title = document.getElementById('titleInput').value; const mainCategory = document.getElementById('categorySelect').value;
+            const fileInput = document.getElementById('fileInput'); const fileFile = fileInput.files; const uploadBtn = document.getElementById('uploadBtn');
+
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return alert("Войдите в сеть!");
+
+            const { data: notes } = await supabase.from('notifications').select('message').eq('user_id', user.id);
+            if (notes) {
+                for (let note of notes) {
+                    if (note.message.startsWith('__MUTE_FLAG__:')) {
+                        const muteDate = new Date(note.message.split('__MUTE_FLAG__:'));
+                        if (new Date() < muteDate) { alert(`Загрузка заблокирована до: ${muteDate.toLocaleString()}`); return; }
+                    }
+                }
+            }
+            if (!title || !fileFile) return alert("Заполните карту сценария!");
+
+            let selectedTags = [mainCategory];
+}
+card.innerHTML = <div><div class="card-tags">${badgesHTML}</div><h4>${item.title}</h4></div> <div> <p style="margin: 3px 0 8px 0; font-size: 11px;"><small>${authorDisplay}</small></p> <div class="action-group"><a href="${item.file_url}" class="download-btn" target="_blank" download>Скачать .json</a>${modButtonsHTML}</div> </div>;
+pageNode.appendChild(card);
+});
+workshopSlider.appendChild(pageNode);
+}
+}
+checkUser(); loadWorkshopItems();
+
